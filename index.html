@@ -3,30 +3,32 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Garden Defense</title>
+<title>Garden Defense+</title>
 <style>
-body{font-family:Arial;background:linear-gradient(#6ecf68,#4a8f3a);margin:0;text-align:center}
-h1{margin:10px;color:#fff;text-shadow:1px 1px 2px #000}
-#ui{display:flex;justify-content:center;gap:10px;margin-bottom:10px}
-button{padding:10px 14px;font-size:14px;cursor:pointer;border:none;border-radius:8px;box-shadow:0 3px 0 #333}
-#energy{font-weight:bold;font-size:18px;color:#fff}
-#game{position:relative;display:grid;grid-template-rows:repeat(3,100px);grid-template-columns:repeat(9,90px);gap:4px;justify-content:center;margin:auto;background:#3b6b2a;padding:6px;border-radius:16px}
-.cell{background:radial-gradient(#9be27d,#6ecf68);border-radius:18px;position:relative}
-.plant{width:70px;height:70px;margin:auto;margin-top:15px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:bold}
-.shooter{background:#4caf50}
-.wall{background:#8d6e63;border-radius:18px}
-.sun{background:#ffeb3b;color:#000}
-.enemy{position:absolute;width:60px;height:60px;background:#9e9e9e;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold}
-.bullet{position:absolute;width:14px;height:6px;background:#222;border-radius:4px}
+body{margin:0;font-family:Arial;background:linear-gradient(#5fbf5f,#2e6b2e);text-align:center}
+h1{color:#fff;text-shadow:2px 2px 4px #000}
+#ui{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+button{padding:10px 14px;border:none;border-radius:10px;font-size:14px;cursor:pointer;box-shadow:0 3px 0 #333}
+#energy{color:#fff;font-size:18px;font-weight:bold}
+#game{position:relative;display:grid;grid-template-rows:repeat(3,100px);grid-template-columns:repeat(9,90px);gap:6px;justify-content:center;margin:auto;background:#3d7a2a;padding:10px;border-radius:20px}
+.cell{background:radial-gradient(#a6ec87,#6dbf5f);border-radius:20px;position:relative}
+.plant{width:70px;height:70px;margin:auto;margin-top:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;font-weight:bold;box-shadow:inset 0 0 8px rgba(0,0,0,.4)}
+.shooter{background:#2e7d32}
+.bomb{background:#d32f2f}
+.sun{background:#fdd835;color:#000}
+.enemy{position:absolute;width:60px;height:60px;background:#777;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px}
+.enemy.fast{background:#ff7043}
+.enemy.tank{background:#5d4037}
+.bullet{position:absolute;width:16px;height:6px;background:#222;border-radius:4px}
 </style>
 </head>
 <body>
-<h1>🌱 Garden Defense</h1>
+<h1>🌱 Garden Defense+</h1>
 <div id="ui">
 <div id="energy">Energia: 50</div>
 <button onclick="selectPlant('shooter')">🌿 Atirador (25)</button>
-<button onclick="selectPlant('wall')">🧱 Defensor (20)</button>
-<button onclick="selectPlant('sun')">☀️ Gerador (15)</button>
+<button onclick="selectPlant('bomb')">💣 Bomba (30)</button>
+<button onclick="selectPlant('sun')">☀️ Energia (15)</button>
 </div>
 <div id="game"></div>
 <script>
@@ -36,90 +38,102 @@ const energyEl=document.getElementById('energy');
 let energy=50, selectedPlant=null;
 let grid=[], enemies=[];
 let round=1, enemiesToSpawn=3, spawned=0;
+
 function updateEnergy(){energyEl.innerText='Energia: '+energy}
 function selectPlant(t){selectedPlant=t}
-function cost(t){return t==='shooter'?25:t==='wall'?20:15}
+function cost(t){return t==='shooter'?25:t==='bomb'?30:15}
+
 function createGrid(){
  for(let r=0;r<rows;r++){grid[r]=[];
   for(let c=0;c<cols;c++){
    const cell=document.createElement('div');cell.className='cell';
    cell.onclick=()=>placePlant(r,c,cell);
    game.appendChild(cell);
-   grid[r][c]={plant:null,cell,life:0};
+   grid[r][c]={plant:null,cell};
   }
  }
 }
+
 function placePlant(r,c,cell){
  if(!selectedPlant||grid[r][c].plant||energy<cost(selectedPlant))return;
  energy-=cost(selectedPlant);updateEnergy();
- const plant=document.createElement('div');
- plant.className='plant '+selectedPlant;
- plant.innerText=selectedPlant==='wall'?'🧱':selectedPlant==='sun'?'☀️':'🌿';
- cell.appendChild(plant);
- grid[r][c].plant=selectedPlant;
- grid[r][c].life=selectedPlant==='wall'?120:50;
- if(selectedPlant==='shooter'){
-  setInterval(()=>shoot(r,cell),1200)
- }
+ const plant=document.createElement('div');plant.className='plant '+selectedPlant;
+ plant.innerText=selectedPlant==='shooter'?'🌿':selectedPlant==='bomb'?'💣':'☀️';
+ cell.appendChild(plant);grid[r][c].plant=selectedPlant;
+ if(selectedPlant==='shooter')setInterval(()=>shoot(r,cell),1100);
+ if(selectedPlant==='bomb')setTimeout(()=>explode(r,c),2500);
+ if(selectedPlant==='sun')setInterval(()=>energy+=5,3000);
 }
+
 function shoot(row,cell){
  const bullet=document.createElement('div');bullet.className='bullet';
- const startX=cell.offsetLeft+cell.offsetWidth;
- const startY=cell.offsetTop+cell.offsetHeight/2-3;
- bullet.style.left=startX+'px';bullet.style.top=startY+'px';
- game.appendChild(bullet);let x=startX;
+ let x=cell.offsetLeft+cell.offsetWidth;
+ const y=cell.offsetTop+cell.offsetHeight/2-3;
+ bullet.style.left=x+'px';bullet.style.top=y+'px';game.appendChild(bullet);
  const move=setInterval(()=>{
   x+=6;bullet.style.left=x+'px';
   enemies.forEach((e,i)=>{
-   if(e.row===row && x+14>e.x && x<e.x+60){
-    e.life-=10;bullet.remove();clearInterval(move);
+   if(e.row===row && x+16>e.x && x<e.x+60){
+    e.life-=12;bullet.remove();clearInterval(move);
     if(e.life<=0){e.el.remove();enemies.splice(i,1);checkRoundEnd()}
    }
   })
   if(x>game.offsetWidth){bullet.remove();clearInterval(move)}
  },30)
 }
+
+function explode(r,c){
+ for(let i=enemies.length-1;i>=0;i--){
+  if(Math.abs(enemies[i].row-r)<=0){
+   enemies[i].life-=40;
+   if(enemies[i].life<=0){enemies[i].el.remove();enemies.splice(i,1)}
+  }
+ }
+ grid[r][c].cell.innerHTML='';grid[r][c].plant=null;
+ checkRoundEnd();
+}
+
 function spawnEnemy(){
  const row=Math.floor(Math.random()*rows);
- const enemy=document.createElement('div');enemy.className='enemy';enemy.innerText='🧟';
- game.appendChild(enemy);
- let enemyObj={el:enemy,row,life:60,x:game.offsetWidth-60};
- enemy.style.top=row*104+20+'px';enemy.style.left=enemyObj.x+'px';
+ const type=Math.random()<0.7?'normal':Math.random()<0.5?'fast':'tank';
+ const enemy=document.createElement('div');enemy.className='enemy '+type;
+ enemy.innerText='🧟';game.appendChild(enemy);
+ let life=type==='fast'?40:type==='tank'?120:70;
+ let speed=type==='fast'?2:type==='tank'?0.5:1;
+ let enemyObj={el:enemy,row,life,x:game.offsetWidth-60,speed};
+ enemy.style.top=row*106+20+'px';enemy.style.left=enemyObj.x+'px';
  enemies.push(enemyObj);spawned++;
  const walk=setInterval(()=>{
-  const col=Math.floor(enemyObj.x/94);
-  if(col>=0 && grid[row][col] && grid[row][col].plant==='wall'){
-   grid[row][col].life-=1;
-   if(grid[row][col].life<=0){grid[row][col].cell.innerHTML='';grid[row][col].plant=null}
-   return;
-  }
-  enemyObj.x-=1;enemy.style.left=enemyObj.x+'px';
+  enemyObj.x-=enemyObj.speed;enemy.style.left=enemyObj.x+'px';
   if(enemyObj.x<=0){alert('Game Over');location.reload()}
  },40)
 }
+
 function startRound(){
- spawned=0;
- enemiesToSpawn=2+round;
- showRound();
+ spawned=0;enemiesToSpawn=2+round;showRound();
  const interval=setInterval(()=>{
-  if(spawned<enemiesToSpawn){spawnEnemy()}else{clearInterval(interval)}
+  if(spawned<enemiesToSpawn)spawnEnemy();
+  else clearInterval(interval);
  },1200)
 }
+
 function checkRoundEnd(){
  if(spawned===enemiesToSpawn && enemies.length===0){
-  energy+=25;updateEnergy();
-  round++;setTimeout(startRound,2000)
+  energy+=30;updateEnergy();round++;
+  setTimeout(startRound,2500);
  }
 }
+
 function showRound(){
  const r=document.createElement('div');
  r.innerText='ROUND '+round;
  r.style.position='absolute';r.style.top='50%';r.style.left='50%';
  r.style.transform='translate(-50%,-50%)';
- r.style.fontSize='36px';r.style.color='white';
- r.style.textShadow='2px 2px 4px black';r.style.zIndex='10';
+ r.style.fontSize='40px';r.style.color='white';
+ r.style.textShadow='2px 2px 6px black';r.style.zIndex='10';
  game.appendChild(r);setTimeout(()=>r.remove(),2000)
 }
+
 createGrid();updateEnergy();startRound();
 </script>
 </body>

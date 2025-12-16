@@ -5,28 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Garden Defense</title>
 <style>
-body{font-family:Arial;background:#7ec850;margin:0;text-align:center}
-h1{margin:10px}
+body{font-family:Arial;background:linear-gradient(#6ecf68,#4a8f3a);margin:0;text-align:center}
+h1{margin:10px;color:#fff;text-shadow:1px 1px 2px #000}
 #ui{display:flex;justify-content:center;gap:10px;margin-bottom:10px}
-button{padding:8px 12px;font-size:14px;cursor:pointer}
-#energy{font-weight:bold;font-size:18px}
-#game{position:relative;display:grid;grid-template-rows:repeat(5,80px);grid-template-columns:repeat(9,80px);gap:2px;justify-content:center;margin:auto;background:#4a8f3a;padding:5px}
-.cell{background:#9be27d;border:1px solid #3b6b2a;position:relative}
-.plant{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;border-radius:10px}
-.shooter{background:#4caf50}
-.wall{background:#8d6e63}
-.sun{background:#ffeb3b}
-.enemy{position:absolute;width:40px;height:40px;background:#9e9e9e;border-radius:6px}
-.bullet{position:absolute;width:12px;height:6px;background:black;border-radius:3px}
+button{padding:10px 14px;font-size:14px;cursor:pointer;border:none;border-radius:8px;box-shadow:0 3px 0 #333}
+#energy{font-weight:bold;font-size:18px;color:#fff}
+#game{position:relative;display:grid;grid-template-rows:repeat(5,90px);grid-template-columns:repeat(9,90px);gap:4px;justify-content:center;margin:auto;background:#3b6b2a;padding:6px;border-radius:16px}
+.cell{background:radial-gradient(#9be27d,#6ecf68);border-radius:18px;position:relative}
+.plant{width:70px;height:70px;margin:auto;margin-top:10px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:bold}
+.shooter{background:#4caf50;box-shadow:inset -4px -4px 0 #2e7d32}
+.wall{background:#8d6e63;border-radius:18px;box-shadow:inset -4px -4px 0 #5d4037}
+.sun{background:#ffeb3b;color:#000;box-shadow:inset -4px -4px 0 #fbc02d}
+.enemy{position:absolute;width:60px;height:60px;background:#9e9e9e;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold}
+.bullet{position:absolute;width:14px;height:6px;background:#222;border-radius:4px}
 </style>
 </head>
 <body>
 <h1>🌱 Garden Defense</h1>
 <div id="ui">
 <div id="energy">Energia: 50</div>
-<button onclick="selectPlant('shooter')">Atirador (25)</button>
-<button onclick="selectPlant('wall')">Defensor (20)</button>
-<button onclick="selectPlant('sun')">Gerador (15)</button>
+<button onclick="selectPlant('shooter')">🌿 Atirador (25)</button>
+<button onclick="selectPlant('wall')">🧱 Defensor (20)</button>
+<button onclick="selectPlant('sun')">☀️ Gerador (15)</button>
 </div>
 <div id="game"></div>
 <script>
@@ -44,7 +44,7 @@ function createGrid(){
    const cell=document.createElement('div');cell.className='cell';
    cell.onclick=()=>placePlant(r,c,cell);
    game.appendChild(cell);
-   grid[r][c]={plant:null,cell,interval:null};
+   grid[r][c]={plant:null,cell,life:0};
   }
  }
 }
@@ -52,28 +52,29 @@ function placePlant(r,c,cell){
  if(!selectedPlant||grid[r][c].plant||energy<cost(selectedPlant))return;
  energy-=cost(selectedPlant);updateEnergy();
  const plant=document.createElement('div');
- plant.className='plant '+selectedPlant;plant.innerText=selectedPlant;
- cell.appendChild(plant);grid[r][c].plant=selectedPlant;
+ plant.className='plant '+selectedPlant;
+ plant.innerText=selectedPlant==='wall'?'🧱':selectedPlant==='sun'?'☀️':'🌿';
+ cell.appendChild(plant);
+ grid[r][c].plant=selectedPlant;
+ grid[r][c].life=selectedPlant==='wall'?100:50;
  if(selectedPlant==='sun'){
   setInterval(()=>{energy+=5;updateEnergy()},5000)
  }
  if(selectedPlant==='shooter'){
-  grid[r][c].interval=setInterval(()=>shoot(r,cell),1200)
+  setInterval(()=>shoot(r,cell),1200)
  }
 }
 function shoot(row,cell){
  const bullet=document.createElement('div');bullet.className='bullet';
  const startX=cell.offsetLeft+cell.offsetWidth;
  const startY=cell.offsetTop+cell.offsetHeight/2-3;
- bullet.style.left=startX+'px';
- bullet.style.top=startY+'px';
- game.appendChild(bullet);
- let x=startX;
+ bullet.style.left=startX+'px';bullet.style.top=startY+'px';
+ game.appendChild(bullet);let x=startX;
  const move=setInterval(()=>{
-  x+=6; bullet.style.left=x+'px';
+  x+=6;bullet.style.left=x+'px';
   enemies.forEach((e,i)=>{
-   if(e.row===row && x+12>e.x && x<e.x+40){
-    e.life-=10; bullet.remove(); clearInterval(move);
+   if(e.row===row && x+14>e.x && x<e.x+60){
+    e.life-=10;bullet.remove();clearInterval(move);
     if(e.life<=0){e.el.remove();enemies.splice(i,1)}
    }
   })
@@ -82,13 +83,19 @@ function shoot(row,cell){
 }
 function spawnEnemy(){
  const row=Math.floor(Math.random()*rows);
- const enemy=document.createElement('div');enemy.className='enemy';
- enemy.style.top=row*82+25+'px';game.appendChild(enemy);
- let enemyObj={el:enemy,row,life:40,x:game.offsetWidth-40};
- enemy.style.left=enemyObj.x+'px';
+ const enemy=document.createElement('div');enemy.className='enemy';enemy.innerText='🧟';
+ game.appendChild(enemy);
+ let enemyObj={el:enemy,row,life:60,x:game.offsetWidth-60,speed:1};
+ enemy.style.top=row*94+15+'px';enemy.style.left=enemyObj.x+'px';
  enemies.push(enemyObj);
  const walk=setInterval(()=>{
-  enemyObj.x-=1;enemy.style.left=enemyObj.x+'px';
+  const col=Math.floor(enemyObj.x/94);
+  if(col>=0 && grid[row][col] && grid[row][col].plant==='wall'){
+   grid[row][col].life-=1;
+   if(grid[row][col].life<=0){grid[row][col].cell.innerHTML='';grid[row][col].plant=null}
+   return;
+  }
+  enemyObj.x-=enemyObj.speed;enemy.style.left=enemyObj.x+'px';
   if(enemyObj.x<=0){alert('Game Over');location.reload()}
  },40)
 }

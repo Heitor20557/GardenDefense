@@ -10,12 +10,12 @@ h1{margin:10px;color:#fff;text-shadow:1px 1px 2px #000}
 #ui{display:flex;justify-content:center;gap:10px;margin-bottom:10px}
 button{padding:10px 14px;font-size:14px;cursor:pointer;border:none;border-radius:8px;box-shadow:0 3px 0 #333}
 #energy{font-weight:bold;font-size:18px;color:#fff}
-#game{position:relative;display:grid;grid-template-rows:repeat(5,90px);grid-template-columns:repeat(9,90px);gap:4px;justify-content:center;margin:auto;background:#3b6b2a;padding:6px;border-radius:16px}
+#game{position:relative;display:grid;grid-template-rows:repeat(3,100px);grid-template-columns:repeat(9,90px);gap:4px;justify-content:center;margin:auto;background:#3b6b2a;padding:6px;border-radius:16px}
 .cell{background:radial-gradient(#9be27d,#6ecf68);border-radius:18px;position:relative}
-.plant{width:70px;height:70px;margin:auto;margin-top:10px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:bold}
-.shooter{background:#4caf50;box-shadow:inset -4px -4px 0 #2e7d32}
-.wall{background:#8d6e63;border-radius:18px;box-shadow:inset -4px -4px 0 #5d4037}
-.sun{background:#ffeb3b;color:#000;box-shadow:inset -4px -4px 0 #fbc02d}
+.plant{width:70px;height:70px;margin:auto;margin-top:15px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:bold}
+.shooter{background:#4caf50}
+.wall{background:#8d6e63;border-radius:18px}
+.sun{background:#ffeb3b;color:#000}
 .enemy{position:absolute;width:60px;height:60px;background:#9e9e9e;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold}
 .bullet{position:absolute;width:14px;height:6px;background:#222;border-radius:4px}
 </style>
@@ -30,11 +30,12 @@ button{padding:10px 14px;font-size:14px;cursor:pointer;border:none;border-radius
 </div>
 <div id="game"></div>
 <script>
-const rows=5, cols=9;
+const rows=3, cols=9;
 const game=document.getElementById('game');
 const energyEl=document.getElementById('energy');
 let energy=50, selectedPlant=null;
 let grid=[], enemies=[];
+let round=1, enemiesToSpawn=3, spawned=0;
 function updateEnergy(){energyEl.innerText='Energia: '+energy}
 function selectPlant(t){selectedPlant=t}
 function cost(t){return t==='shooter'?25:t==='wall'?20:15}
@@ -56,10 +57,7 @@ function placePlant(r,c,cell){
  plant.innerText=selectedPlant==='wall'?'🧱':selectedPlant==='sun'?'☀️':'🌿';
  cell.appendChild(plant);
  grid[r][c].plant=selectedPlant;
- grid[r][c].life=selectedPlant==='wall'?100:50;
- if(selectedPlant==='sun'){
-  setInterval(()=>{energy+=5;updateEnergy()},5000)
- }
+ grid[r][c].life=selectedPlant==='wall'?120:50;
  if(selectedPlant==='shooter'){
   setInterval(()=>shoot(r,cell),1200)
  }
@@ -75,7 +73,7 @@ function shoot(row,cell){
   enemies.forEach((e,i)=>{
    if(e.row===row && x+14>e.x && x<e.x+60){
     e.life-=10;bullet.remove();clearInterval(move);
-    if(e.life<=0){e.el.remove();enemies.splice(i,1)}
+    if(e.life<=0){e.el.remove();enemies.splice(i,1);checkRoundEnd()}
    }
   })
   if(x>game.offsetWidth){bullet.remove();clearInterval(move)}
@@ -85,9 +83,9 @@ function spawnEnemy(){
  const row=Math.floor(Math.random()*rows);
  const enemy=document.createElement('div');enemy.className='enemy';enemy.innerText='🧟';
  game.appendChild(enemy);
- let enemyObj={el:enemy,row,life:60,x:game.offsetWidth-60,speed:1};
- enemy.style.top=row*94+15+'px';enemy.style.left=enemyObj.x+'px';
- enemies.push(enemyObj);
+ let enemyObj={el:enemy,row,life:60,x:game.offsetWidth-60};
+ enemy.style.top=row*104+20+'px';enemy.style.left=enemyObj.x+'px';
+ enemies.push(enemyObj);spawned++;
  const walk=setInterval(()=>{
   const col=Math.floor(enemyObj.x/94);
   if(col>=0 && grid[row][col] && grid[row][col].plant==='wall'){
@@ -95,45 +93,34 @@ function spawnEnemy(){
    if(grid[row][col].life<=0){grid[row][col].cell.innerHTML='';grid[row][col].plant=null}
    return;
   }
-  enemyObj.x-=enemyObj.speed;enemy.style.left=enemyObj.x+'px';
+  enemyObj.x-=1;enemy.style.left=enemyObj.x+'px';
   if(enemyObj.x<=0){alert('Game Over');location.reload()}
  },40)
 }
-createGrid();updateEnergy();let round=1;
-let enemiesToSpawn=3;
-let spawned=0;
-let spawnInterval;
-startRound();
-
 function startRound(){
-  spawned=0;
-  enemiesToSpawn=2+round;
-  showRound();
-  spawnInterval=setInterval(()=>{
-    if(spawned<enemiesToSpawn){
-      spawnEnemy();
-      spawned++;
-    }else{
-      clearInterval(spawnInterval);
-      setTimeout(()=>{round++;startRound();},4000);
-    }
-  },1200);
+ spawned=0;
+ enemiesToSpawn=2+round;
+ showRound();
+ const interval=setInterval(()=>{
+  if(spawned<enemiesToSpawn){spawnEnemy()}else{clearInterval(interval)}
+ },1200)
 }
-
+function checkRoundEnd(){
+ if(spawned===enemiesToSpawn && enemies.length===0){
+  energy+=25;updateEnergy();
+  round++;setTimeout(startRound,2000)
+ }
+}
 function showRound(){
-  const r=document.createElement('div');
-  r.innerText='ROUND '+round;
-  r.style.position='absolute';
-  r.style.top='50%';
-  r.style.left='50%';
-  r.style.transform='translate(-50%,-50%)';
-  r.style.fontSize='36px';
-  r.style.color='white';
-  r.style.textShadow='2px 2px 4px black';
-  r.style.zIndex='10';
-  game.appendChild(r);
-  setTimeout(()=>r.remove(),2000);
+ const r=document.createElement('div');
+ r.innerText='ROUND '+round;
+ r.style.position='absolute';r.style.top='50%';r.style.left='50%';
+ r.style.transform='translate(-50%,-50%)';
+ r.style.fontSize='36px';r.style.color='white';
+ r.style.textShadow='2px 2px 4px black';r.style.zIndex='10';
+ game.appendChild(r);setTimeout(()=>r.remove(),2000)
 }
+createGrid();updateEnergy();startRound();
 </script>
 </body>
 </html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Garden Defense</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #7ec850;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+
+    h1 { margin: 10px; }
+
+    #ui {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      padding: 8px 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    #energy {
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    #game {
+      display: grid;
+      grid-template-rows: repeat(5, 80px);
+      grid-template-columns: repeat(9, 80px);
+      gap: 2px;
+      justify-content: center;
+      margin: 10px auto;
+      background: #4a8f3a;
+      padding: 5px;
+    }
+
+    .cell {
+      background: #9be27d;
+      border: 1px solid #3b6b2a;
+      position: relative;
+    }
+
+    .plant {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 12px;
+    }
+
+    .shooter { background: #4caf50; }
+    .wall { background: #8d6e63; }
+    .sun { background: #ffeb3b; }
+
+    .enemy {
+      position: absolute;
+      right: 0;
+      top: 20px;
+      width: 30px;
+      height: 30px;
+      background: #9e9e9e;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌱 Garden Defense</h1>
+
+  <div id="ui">
+    <div id="energy">Energia: 50</div>
+    <button onclick="selectPlant('shooter')">Atirador (25)</button>
+    <button onclick="selectPlant('wall')">Defensor (20)</button>
+    <button onclick="selectPlant('sun')">Gerador (15)</button>
+  </div>
+
+  <div id="game"></div>
+
+  <script>
+    const rows = 5;
+    const cols = 9;
+    const game = document.getElementById('game');
+    const energyEl = document.getElementById('energy');
+
+    let energy = 50;
+    let selectedPlant = null;
+    let grid = [];
+
+    function updateEnergy() {
+      energyEl.innerText = 'Energia: ' + energy;
+    }
+
+    function selectPlant(type) {
+      selectedPlant = type;
+    }
+
+    function cost(type) {
+      if (type === 'shooter') return 25;
+      if (type === 'wall') return 20;
+      if (type === 'sun') return 15;
+    }
+
+    function createGrid() {
+      for (let r = 0; r < rows; r++) {
+        grid[r] = [];
+        for (let c = 0; c < cols; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.onclick = () => placePlant(r, c, cell);
+          game.appendChild(cell);
+          grid[r][c] = { plant: null, cell: cell };
+        }
+      }
+    }
+
+    function placePlant(r, c, cell) {
+      if (!selectedPlant) return;
+      if (grid[r][c].plant) return;
+      if (energy < cost(selectedPlant)) return;
+
+      energy -= cost(selectedPlant);
+      updateEnergy();
+
+      const plant = document.createElement('div');
+      plant.className = 'plant ' + selectedPlant;
+      plant.innerText = selectedPlant;
+      cell.appendChild(plant);
+
+      grid[r][c].plant = selectedPlant;
+
+      if (selectedPlant === 'sun') {
+        setInterval(() => {
+          energy += 5;
+          updateEnergy();
+        }, 5000);
+      }
+    }
+
+    function spawnEnemy() {
+      const row = Math.floor(Math.random() * rows);
+      const enemy = document.createElement('div');
+      enemy.className = 'enemy';
+      enemy.style.top = row * 82 + 25 + 'px';
+      game.appendChild(enemy);
+
+      let x = cols * 82;
+      const interval = setInterval(() => {
+        x -= 1;
+        enemy.style.right = x + 'px';
+        if (x <= 0) {
+          alert('Um inimigo chegou na casa!');
+          clearInterval(interval);
+          enemy.remove();
+        }
+      }, 50);
+    }
+
+    createGrid();
+    updateEnergy();
+    setInterval(spawnEnemy, 4000);
+  </script>
+</body>
+</html>

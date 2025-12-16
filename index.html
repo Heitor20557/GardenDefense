@@ -99,7 +99,41 @@ function spawnEnemy(){
   if(enemyObj.x<=0){alert('Game Over');location.reload()}
  },40)
 }
-createGrid();updateEnergy();setInterval(spawnEnemy,4000)
+createGrid();updateEnergy();let round=1;
+let enemiesToSpawn=3;
+let spawned=0;
+let spawnInterval;
+startRound();
+
+function startRound(){
+  spawned=0;
+  enemiesToSpawn=2+round;
+  showRound();
+  spawnInterval=setInterval(()=>{
+    if(spawned<enemiesToSpawn){
+      spawnEnemy();
+      spawned++;
+    }else{
+      clearInterval(spawnInterval);
+      setTimeout(()=>{round++;startRound();},4000);
+    }
+  },1200);
+}
+
+function showRound(){
+  const r=document.createElement('div');
+  r.innerText='ROUND '+round;
+  r.style.position='absolute';
+  r.style.top='50%';
+  r.style.left='50%';
+  r.style.transform='translate(-50%,-50%)';
+  r.style.fontSize='36px';
+  r.style.color='white';
+  r.style.textShadow='2px 2px 4px black';
+  r.style.zIndex='10';
+  game.appendChild(r);
+  setTimeout(()=>r.remove(),2000);
+}
 </script>
 </body>
 </html>

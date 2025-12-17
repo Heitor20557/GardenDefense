@@ -37,10 +37,10 @@ button{padding:10px 14px;border:none;border-radius:10px;font-size:14px;cursor:po
 .laserBeam{position:absolute;width:100%;height:4px;background:#ce93d8}
 audio{display:none}
 </style>
-<audio id="bgm" loop src="https://cdn.pixabay.com/audio/2022/03/15/audio_7b4a04f4c4.mp3"></audio>
-<audio id="shootSound" src="https://cdn.pixabay.com/audio/2022/03/10/audio_8e1a7f3b6d.mp3"></audio>
-<audio id="explodeSound" src="https://cdn.pixabay.com/audio/2022/03/09/audio_c8a1f7b1e4.mp3"></audio>
-<audio id="zombieDie" src="https://cdn.pixabay.com/audio/2022/03/15/audio_9a7d3e1f8c.mp3"></audio>
+<audio id="bgm" loop preload="auto" src="https://cdn.pixabay.com/audio/2022/03/15/audio_7b4a04f4c4.mp3"></audio>
+<audio id="shootSound" preload="auto" src="https://cdn.pixabay.com/audio/2022/03/10/audio_8e1a7f3b6d.mp3"></audio>
+<audio id="explodeSound" preload="auto" src="https://cdn.pixabay.com/audio/2022/03/09/audio_c8a1f7b1e4.mp3"></audio>
+<audio id="zombieDie" preload="auto" src="https://cdn.pixabay.com/audio/2022/03/15/audio_9a7d3e1f8c.mp3"></audio>.pixabay.com/audio/2022/03/15/audio_9a7d3e1f8c.mp3"></audio>
 </head>
 <body>
 <div id="menu">
@@ -73,7 +73,7 @@ let round=1, enemiesToSpawn=0, spawned=0;
 function setMap(type){
  if(type==='day')game.style.backgroundImage="url('https://i.imgur.com/8YqZQZp.png')";
  if(type==='night')game.style.backgroundImage="url('https://i.imgur.com/8s5zZQk.png')";
- if(type==='fog')game.style.backgroundImage="url('https://i.imgur.com/UdZKp6R.png')";
+ if(type==='fog')game.stylegur.com/UdZKp6R.png')";
  menu.style.display='none';resetGame();
 }
 
@@ -107,38 +107,57 @@ function placePlant(r,c,cell){
  if(selectedPlant==='ice')setInterval(()=>shoot(r,cell,6,true),1400);
  if(selectedPlant==='laser')setInterval(()=>laserShoot(r,cell),2000);
  if(selectedPlant==='bomb')setTimeout(()=>explode(r,c),2500);
- if(selectedPlant==='sun')setInterval(()=>{energy+=5;updateEnergy()},3000);
-}
+ if(selectedPlant==function shoot(row,cell,damage,slow=false){
+  // só atira se houver zumbi a até 5 colunas
+  const cellIndex=[...game.children].indexOf(cell);
+  const col=Math.floor(cellIndex/rows);
+  const maxX=cell.offsetLeft+5*94;
+  const target=enemies.find(e=>e.row===row && e.x<=maxX && e.x>cell.offsetLeft);
+  if(!target) return;
 
-function shoot(row,cell,damage,slow=false){
- const bullet=document.createElement('div');bullet.className='bullet';
- let x=cell.offsetLeft+cell.offsetWidth;
- const y=cell.offsetTop+cell.offsetHeight/2-3;
- bullet.style.left=x+'px';bullet.style.top=y+'px';game.appendChild(bullet);
- const move=setInterval(()=>{
-  x+=6;bullet.style.left=x+'px';
-  enemies.forEach(e=>{
-   if(e.row===row && x+16>e.x && x<e.x+60){
-    e.life-=damage;if(slow)e.speed*=0.7;
-    bullet.remove();clearInterval(move);
-    if(e.life<=0)killEnemy(e);
-   }
+  const s=document.getElementById('shootSound');
+  if(s){s.currentTime=0; s.play().catch(()=>{});}  
+
+  const bullet=document.createElement('div');bullet.className='bullet';
+  let x=cell.offsetLeft+cell.offsetWidth;
+  const y=cell.offsetTop+cell.offsetHeight/2-3;
+  bullet.style.left=x+'px';bullet.style.top=y+'px';game.appendChild(bullet);
+
+  const move=setInterval(()=>{
+    x+=6;bullet.style.left=x+'px';
+    if(target && x+16>target.x && x<targetTop+cell.offsetHeight/2-3;
+  bullet.style.left=x+'px';bullet.style.top=y+'px';game.appendChild(bullet);
+
+  const move=setInterval(()=>{
+    x+=6;bullet.style.left=x+'px';
+    if(target && x+16>target.x && x<target.x+60){
+      target.life-=damage;
+      if(slow) target.speed*=0.7;
+      bullet.remove();clearInterval(move);
+      if(target.life<=0) killEnemy(target);
+    }
+    if(x>game.offsetWidth){bullet.remove();clearInterval(move)}
+  },30);
+}
   })
   if(x>game.offsetWidth){bullet.remove();clearInterval(move)}
  },30)
 }
 
 function laserShoot(row,cell){
- const beam=document.createElement('div');beam.className='laserBeam';
- beam.style.top=cell.offsetTop+cell.offsetHeight/2+'px';
- game.appendChild(beam);
- enemies.forEach(e=>{if(e.row===row)e.life-=25;if(e.life<=0)killEnemy(e)});
+ const beam=document.createElement('div');beam.classNae.life-=25;if(e.life<=0)killEnemy(e)});
  setTimeout(()=>beam.remove(),300);
 }
 
 function explode(r,c){
- enemies.slice().forEach(e=>{
-  if(Math.abs(e.row-r)<=1){e.life-=50;if(e.life<=0)killEnemy(e)}
+  const ex=document.getElementById('explodeSound');
+  if(ex){ex.currentTime=0; ex.play().catch(()=>{});}  
+  enemies.slice().forEach(e=>{
+    if(Math.abs(e.row-r)<=1){e.life-=50;if(e.life<=0) killEnemy(e)}
+  });
+  grid[r][c].cell.innerHTML='';grid[r][c].plant=null;
+  checkRoundEnd();
+}
  });
  grid[r][c].cell.innerHTML='';grid[r][c].plant=null;
  checkRoundEnd();
@@ -154,12 +173,18 @@ function spawnEnemy(){
  let e={el:enemy,row,life:stats.life,x:game.offsetWidth-60,speed:stats.speed};
  enemy.style.top=row*106+20+'px';enemy.style.left=e.x+'px';enemies.push(e);spawned++;
  e.timer=setInterval(()=>{
-  e.x-=e.speed;enemy.style.left=e.x+'px';
-  if(e.x<=0){alert('Game Over');location.reload()}
+  e.x-=e.speed;enemy.style Over');location.reload()}
  },40);
 }
 
-function killEnemy(e){clearInterval(e.timer);e.el.remove();enemies=enemies.filter(x=>x!==e);checkRoundEnd()}
+function killEnemy(e){
+  const z=document.getElementById('zombieDie');
+  if(z){z.currentTime=0; z.play().catch(()=>{});}  
+  clearInterval(e.timer);
+  e.el.remove();
+  enemies=enemies.filter(x=>x!==e);
+  checkRoundEnd();
+}
 
 function startRound(){spawned=0;enemiesToSpawn=round%5===0?1:2+round;showRound();
  const interval=setInterval(()=>{

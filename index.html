@@ -5,38 +5,54 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Garden Defense Ultimate</title>
 <style>
-body{margin:0;font-family:Arial;background:linear-gradient(#4caf50,#1b5e20);text-align:center}
+body{margin:0;font-family:Arial;background:#000;text-align:center}
 h1{color:#fff;text-shadow:2px 2px 6px #000}
-#menu{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20}
-#menu button{font-size:20px;padding:15px 30px}
-#ui{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+#menu{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;color:white}
+#menu button{font-size:20px;padding:15px 30px;border-radius:12px}
+#ui{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:10px}
 button{padding:10px 14px;border:none;border-radius:10px;font-size:14px;cursor:pointer;box-shadow:0 3px 0 #333}
 #energy{color:#fff;font-size:18px;font-weight:bold}
-#game{position:relative;display:grid;grid-template-rows:repeat(3,100px);grid-template-columns:repeat(9,90px);gap:6px;justify-content:center;margin:auto;background:#33691e;padding:10px;border-radius:20px}
-.cell{background:radial-gradient(#a5d6a7,#66bb6a);border-radius:20px;position:relative}
+#game{position:relative;display:grid;grid-template-rows:repeat(3,100px);grid-template-columns:repeat(9,90px);gap:6px;justify-content:center;margin:auto;padding:10px;border-radius:20px;background:url('https://i.imgur.com/8YqZQZp.png') center/cover no-repeat}
+.cell{background:rgba(255,255,255,0.15);border-radius:20px;position:relative}
 .plant{width:70px;height:70px;margin:auto;margin-top:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:bold;box-shadow:inset 0 0 8px rgba(0,0,0,.4)}
 .shooter{background:#2e7d32;color:#fff}
 .ice{background:#4fc3f7}
-.laser{background:#ab47bc}
-.bomb{background:#d32f2f}
+.laser{background:#ab47bc;color:#fff}
+.bomb{background:#d32f2f;color:#fff}
 .sun{background:#fdd835;color:#000}
-.enemy{position:absolute;width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px}
-.enemy.normal{background:#9e9e9e}
-.enemy.fast{background:#ff7043}
-.enemy.tank{background:#5d4037}
-.enemy.boss{background:#b71c1c;width:90px;height:90px;font-size:34px}
+
+/* ZOMBIE CSS */
+.enemy{position:absolute;width:60px;height:80px;bottom:0}
+.zombie{width:60px;height:80px;position:relative}
+.zombie .head{width:40px;height:40px;background:#7cb342;border-radius:50%;margin:auto}
+.zombie .eye{width:6px;height:6px;background:#000;border-radius:50%;position:absolute;top:14px}
+.zombie .eye.left{left:14px}
+.zombie .eye.right{right:14px}
+.zombie .body{width:50px;height:40px;background:#558b2f;border-radius:10px;margin:auto;margin-top:2px}
+.fast .head{background:#ff7043}
+.tank .head{background:#5d4037}
+.boss .head{background:#b71c1c}
+
 .bullet{position:absolute;width:16px;height:6px;background:#222;border-radius:4px}
-.laserBeam{position:absolute;width:40px;height:4px;background:#ce93d8}
+.laserBeam{position:absolute;width:100%;height:4px;background:#ce93d8}
+audio{display:none}
 </style>
+<audio id="bgm" loop src="https://cdn.pixabay.com/audio/2022/03/15/audio_7b4a04f4c4.mp3"></audio>
+<audio id="shootSound" src="https://cdn.pixabay.com/audio/2022/03/10/audio_8e1a7f3b6d.mp3"></audio>
+<audio id="explodeSound" src="https://cdn.pixabay.com/audio/2022/03/09/audio_c8a1f7b1e4.mp3"></audio>
+<audio id="zombieDie" src="https://cdn.pixabay.com/audio/2022/03/15/audio_9a7d3e1f8c.mp3"></audio>
 </head>
 <body>
 <div id="menu">
 <h1>🌱 Garden Defense Ultimate</h1>
-<button onclick="startGame()">▶ Jogar</button>
+<p>Escolha o mapa</p>
+<button onclick="setMap('day')">🌤️ Dia</button>
+<button onclick="setMap('night')">🌙 Noite</button>
+<button onclick="setMap('fog')">🌫️ Neblina</button>
 </div>
 
 <div id="ui">
-<div id="energy">Energia: 0</div>
+<div id="energy">Energia: 100</div>
 <button onclick="selectPlant('shooter')">🌿 Atirador (25)</button>
 <button onclick="selectPlant('ice')">❄️ Gelo (30)</button>
 <button onclick="selectPlant('laser')">🔮 Laser (40)</button>
@@ -50,19 +66,24 @@ const rows=3, cols=9;
 const game=document.getElementById('game');
 const energyEl=document.getElementById('energy');
 const menu=document.getElementById('menu');
-let energy=50, selectedPlant=null;
-let grid=[], enemies=[], gameStarted=false;
+let energy=100, selectedPlant=null;
+let grid=[], enemies=[];
 let round=1, enemiesToSpawn=0, spawned=0;
+
+function setMap(type){
+ if(type==='day')game.style.backgroundImage="url('https://i.imgur.com/8YqZQZp.png')";
+ if(type==='night')game.style.backgroundImage="url('https://i.imgur.com/8s5zZQk.png')";
+ if(type==='fog')game.style.backgroundImage="url('https://i.imgur.com/UdZKp6R.png')";
+ menu.style.display='none';resetGame();
+}
 
 function updateEnergy(){energyEl.innerText='Energia: '+energy}
 function selectPlant(t){selectedPlant=t}
 function cost(t){return {shooter:25,ice:30,laser:40,bomb:35,sun:15}[t]}
 
-function startGame(){menu.style.display='none';resetGame();}
-
 function resetGame(){
- game.innerHTML='';grid=[];enemies=[];round=1;energy=50;
- createGrid();updateEnergy();startRound();gameStarted=true;
+ game.innerHTML='';grid=[];enemies=[];round=1;energy=100;
+ createGrid();updateEnergy();startRound();
 }
 
 function createGrid(){
@@ -77,7 +98,7 @@ function createGrid(){
 }
 
 function placePlant(r,c,cell){
- if(!gameStarted||!selectedPlant||grid[r][c].plant||energy<cost(selectedPlant))return;
+ if(!selectedPlant||grid[r][c].plant||energy<cost(selectedPlant))return;
  energy-=cost(selectedPlant);updateEnergy();
  const plant=document.createElement('div');plant.className='plant '+selectedPlant;
  plant.innerText={shooter:'🌿',ice:'❄️',laser:'🔮',bomb:'💣',sun:'☀️'}[selectedPlant];
@@ -97,7 +118,7 @@ function shoot(row,cell,damage,slow=false){
  const move=setInterval(()=>{
   x+=6;bullet.style.left=x+'px';
   enemies.forEach(e=>{
-   if(e.row===row && x+16>e.x && x<e.x+e.size){
+   if(e.row===row && x+16>e.x && x<e.x+60){
     e.life-=damage;if(slow)e.speed*=0.7;
     bullet.remove();clearInterval(move);
     if(e.life<=0)killEnemy(e);
@@ -109,11 +130,10 @@ function shoot(row,cell,damage,slow=false){
 
 function laserShoot(row,cell){
  const beam=document.createElement('div');beam.className='laserBeam';
- beam.style.top=cell.offsetTop+cell.offsetHeight/2+'px';beam.style.left=cell.offsetLeft+'px';
+ beam.style.top=cell.offsetTop+cell.offsetHeight/2+'px';
  game.appendChild(beam);
- enemies.forEach(e=>{if(e.row===row)e.life-=25});
+ enemies.forEach(e=>{if(e.row===row)e.life-=25;if(e.life<=0)killEnemy(e)});
  setTimeout(()=>beam.remove(),300);
- enemies.filter(e=>e.life<=0).forEach(killEnemy);
 }
 
 function explode(r,c){
@@ -126,17 +146,12 @@ function explode(r,c){
 
 function spawnEnemy(){
  const row=Math.floor(Math.random()*rows);
- const isBoss=round%5===0 && spawned===0;
- const type=isBoss?'boss':Math.random()<0.6?'normal':Math.random()<0.5?'fast':'tank';
+ const type=round%5===0?'boss':Math.random()<0.5?'normal':Math.random()<0.5?'fast':'tank';
  const enemy=document.createElement('div');enemy.className='enemy '+type;
- enemy.innerText=isBoss?'👹':'🧟';game.appendChild(enemy);
- let stats={
-  normal:{life:70,speed:1,size:60},
-  fast:{life:40,speed:2,size:60},
-  tank:{life:150,speed:0.6,size:60},
-  boss:{life:400,speed:0.4,size:90}
- }[type];
- let e={el:enemy,row,life:stats.life,x:game.offsetWidth-stats.size,speed:stats.speed,size:stats.size};
+ enemy.innerHTML="<div class='zombie'><div class='head'><div class='eye left'></div><div class='eye right'></div></div><div class='body'></div></div>";
+ game.appendChild(enemy);
+ let stats={normal:{life:70,speed:1},fast:{life:40,speed:2},tank:{life:150,speed:0.6},boss:{life:400,speed:0.4}}[type];
+ let e={el:enemy,row,life:stats.life,x:game.offsetWidth-60,speed:stats.speed};
  enemy.style.top=row*106+20+'px';enemy.style.left=e.x+'px';enemies.push(e);spawned++;
  e.timer=setInterval(()=>{
   e.x-=e.speed;enemy.style.left=e.x+'px';
@@ -148,25 +163,21 @@ function killEnemy(e){clearInterval(e.timer);e.el.remove();enemies=enemies.filte
 
 function startRound(){spawned=0;enemiesToSpawn=round%5===0?1:2+round;showRound();
  const interval=setInterval(()=>{
-  if(spawned<enemiesToSpawn)spawnEnemy();
-  else clearInterval(interval);
+  if(spawned<enemiesToSpawn)spawnEnemy();else clearInterval(interval);
  },1200);
 }
 
 function checkRoundEnd(){
  if(spawned===enemiesToSpawn && enemies.length===0){
-  energy+=40;updateEnergy();round++;
-  setTimeout(startRound,2500);
+  energy+=40;updateEnergy();round++;setTimeout(startRound,2500);
  }
 }
 
 function showRound(){
- const r=document.createElement('div');
- r.innerText='ROUND '+round;
+ const r=document.createElement('div');r.innerText='ROUND '+round;
  r.style.position='absolute';r.style.top='50%';r.style.left='50%';
- r.style.transform='translate(-50%,-50%)';
- r.style.fontSize='42px';r.style.color='white';
- r.style.textShadow='2px 2px 6px black';r.style.zIndex='10';
+ r.style.transform='translate(-50%,-50%)';r.style.fontSize='42px';
+ r.style.color='white';r.style.textShadow='2px 2px 6px black';
  game.appendChild(r);setTimeout(()=>r.remove(),2000)
 }
 </script>
